@@ -2,10 +2,13 @@ from flask import Flask, request
 from flask import render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
+from flask import jsonify
+import os 
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "users.sqlite3")}'
 
 db = SQLAlchemy(app)
 
@@ -76,19 +79,74 @@ def vuln():
             return "Invalid username or password."
 
 
+
+@app.route('/create', methods=['GET', 'POST'])
+def create():
+    if request.method == 'GET':
+        return render_template('create.html')
+
+    new_user = request.form['new_username']
+    new_pass = request.form['new_password']
+
+    user = User(username=new_user, password=new_pass)
+
+    db.session.add(user)
+    db.session.commit()
+
+    return f"User {new_user} created successfully!"
+
+
+@app.route('/safe', methods=['GET', 'POST'])
+def safe():
+    if request.method == 'GET':
+        return render_template('safe.html')
+    if request.method == 'POST':
+        user_safe = request.form['user_safe']
+        pass_safe = request.form['password']
+
+        q = text("""
+            SELECT * FROM user
+            WHERE username = :username
+            AND password = :password
+        """)
+
+        result = db.session.execute(q,{
+            "username": user_safe,
+            "password": pass_safe
+        }).fetchone()
+
+        if result:
+            return f"logged as {user_safe}"
+        else:
+            return "error on your loggin"
+
+
+
+
+@app.route('/api/users', methods=['GET', 'POST'])
+def api_users():
+    if request.method == 'GET':
+        users = User.query.all()
+
+        result = []
+
+        for user in users:
+            result.append({
+                "username": user.username
+            })
+        return jsonify(result)
+    if request.method == 'POST':
+        new_user = request.json.get('username')
+        new_pass = request.json.get('password')
+
+        if not new_user or not new_pass:
+            return jsonify({"error":"username and password are necessary"}), 400
+        user = User(username=new_user, password=new_pass)
+        db.session.add(user)
+        db.session.commit()
+   
 with app.app_context():
     db.create_all()
 
-    user = User.query.filter_by(username='admin').first()
-
-    if user is None:
-        user = User(
-            username='admin',
-            password='admin'
-        )
-
-        db.session.add(user)
-        db.session.commit()
-
-
+ 
 app.run(debug=True, port=8181, host='0.0.0.0')

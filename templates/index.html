@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSec Lab</title>
+    <style>
+        body{
+            background-color: black;
+        }
+        h1{
+            color: brown;
+        }
+        ul{
+            color: chartreuse;
+        }
+        img{
+            color: aliceblue;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <h1>WebSec Lab</h1>
+
+        
+
+    <p>Welcome to the Flask Web Application!</p>
+
+    <ul>
+        <li><a href="/login">Login</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/vuln">Vulnerable Login</a></li>
+        <li><a href="/safe">Safe Login</a></li>
+        <li><a href="/create">Create User</a></li>
+        
+
+    </ul>
+
+    <img src="{{ url_for('static', filename='elliot.jpg') }}" alt="Malcom">
+
+</body>
+</html>

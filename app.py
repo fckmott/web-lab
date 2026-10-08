@@ -88,6 +88,9 @@ def create():
     new_user = request.form['new_username']
     new_pass = request.form['new_password']
 
+    if User.query.filter_by(username=new_user).first():
+        return "Username already exists."
+
     user = User(username=new_user, password=new_pass)
 
     db.session.add(user)
@@ -123,7 +126,7 @@ def safe():
 
 
 
-@app.route('/api/users', methods=['GET', 'POST'])
+@app.route('/api/users', methods=['GET', 'POST', 'DELETE', 'PUT'])
 def api_users():
     if request.method == 'GET':
         users = User.query.all()
@@ -139,12 +142,48 @@ def api_users():
         new_user = request.json.get('username')
         new_pass = request.json.get('password')
 
+        if User.query.filter_by(username=new_user).first():
+            return jsonify({"error":"username already exists"}), 400
         if not new_user or not new_pass:
             return jsonify({"error":"username and password are necessary"}), 400
         user = User(username=new_user, password=new_pass)
         db.session.add(user)
         db.session.commit()
-   
+
+        return jsonify({"message":f"user {new_user} created successfully!"}), 201
+    if request.method == 'DELETE':
+        username_to_delete = request.json.get('username')
+        password_to_delete = request.json.get('password')
+
+        if username_to_delete is None or password_to_delete is None:
+            return jsonify({"error": "username and password are necessary"}), 400
+        user = User.query.filter_by(username=username_to_delete, password=password_to_delete).first()
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            return jsonify({"message": f"user {username_to_delete} deleted successfully!"}), 200
+        else:
+          return jsonify({"error": "user not found or password as incorrect"}), 404
+    if request.method == 'PUT':
+        username_to_update = request.json.get('username')
+        password = request.json.get('password')
+        new_username = request.json.get('new_username')
+        new_password = request.json.get('new_password')
+        if username_to_update is None or password is None or new_username is None or new_password is None:
+            return jsonify({"error": "username and password are necessary"}), 400
+        user = User.query.filter_by(username=username_to_update).first()
+    
+        if user:
+            user.username = new_username
+            user.password = new_password
+            db.session.commit()
+            return jsonify({"message": f"user {username_to_update} to {new_username} updated successfully!"}), 200
+        else:
+            return jsonify({"error": "user not found"}), 404
+    
+            
+            
+        
 with app.app_context():
     db.create_all()
 
